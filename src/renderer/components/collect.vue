@@ -67,7 +67,7 @@
 import {getVideoList, nedbCount, nedbFind, nedbRemove, nedbUpdate} from '../assets/js/until'
 
 export default {
-  name: 'collect',
+  name: 'collect1',
   data: function () {
     return {
       videoList: [],
