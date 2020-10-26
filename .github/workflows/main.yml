@@ -56,14 +56,14 @@ jobs:
         run: |
           npm run build
         env:
-          GH_TOKEN: fc21948925ffd9b727741540aa197deece592202
+          GH_TOKEN: d41274ab0a6a18baa8a608d6e4b053935f4d75c6
 
       - name: build mac app
         if: matrix.os == 'macos-10.15'
         run: |
           npm run build
         env:
-          GH_TOKEN: fc21948925ffd9b727741540aa197deece592202
+          GH_TOKEN: d41274ab0a6a18baa8a608d6e4b053935f4d75c6
 
       # step5: cleanup artifacts in dist_electron
       - name: cleanup artifacts for windows
