@@ -36,6 +36,10 @@ jobs:
         uses: actions/setup-node@v2-beta
 
       # step3: npm install
+      - name: remove .npmrc
+        run: |
+          rm -rf .npmrc
+      # step3: npm install
       - name: npm install
         run: |
           npm install
@@ -46,14 +50,14 @@ jobs:
         run: |
           npm run build
         env:
-          GH_TOKEN: 42fd7bd5bdd143dc4c2a9bb3d87d9bca9358130b
+          GH_TOKEN: fc21948925ffd9b727741540aa197deece592202
 
       - name: build mac app
         if: matrix.os == 'macos-10.15'
         run: |
           npm run build
         env:
-          GH_TOKEN: 42fd7bd5bdd143dc4c2a9bb3d87d9bca9358130b
+          GH_TOKEN: fc21948925ffd9b727741540aa197deece592202
 
       # step5: cleanup artifacts in dist_electron
       - name: cleanup artifacts for windows
