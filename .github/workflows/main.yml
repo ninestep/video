@@ -69,12 +69,12 @@ jobs:
       - name: cleanup artifacts for windows
         if: matrix.os == 'windows-2019'
         run: |
-          npx rimraf "dist_electron/!(*.exe)"
+          npx rimraf "build/!(*.exe)"
 
       - name: cleanup artifacts for macosZ
         if: matrix.os == 'macos-10.15'
         run: |
-          npx rimraf "dist_electron/!(*.dmg)"
+          npx rimraf "build/!(*.dmg)"
 
       # step6: upload artifacts
       - name: upload artifacts
