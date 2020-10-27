@@ -45,7 +45,7 @@ jobs:
       - name: remove .npmrc
         if: matrix.os == 'windows-2019'
         run: |
-          powershell -Command "(gc package.json) -replace '0.0.3', ${GITHUB_REF:10} | Out-File package.json"
+          powershell -Command "(gc package.json) -replace '0.0.3', ${github.ref} | Out-File package.json"
 
       - name: build mac app
         if: matrix.os == 'macos-10.15'
