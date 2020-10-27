@@ -44,7 +44,7 @@
       <div class="loading" v-if="loading">
         <i class="el-icon-loading"></i>
       </div>
-      <div class="loading" v-if="pageInfo.last_page<=pageInfo.current_page">
+      <div class="loading" v-if="parseInt(pageInfo.last_page)<=parseInt(pageInfo.current_page)">
         <p>没有下一页</p>
       </div>
     </el-main>
@@ -292,7 +292,7 @@ export default {
        h=几小时内的数据
        * @type {number}
        */
-      if (this.loading || this.pageInfo.current_page >= this.pageInfo.last_page) {
+      if (this.loading || parseInt(this.pageInfo.current_page) >= parseInt(this.pageInfo.last_page)) {
         return false
       }
       this.loading = true

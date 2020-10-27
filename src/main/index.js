@@ -25,7 +25,9 @@ function createWindow () {
   mainWindow = new BrowserWindow({
     useContentSize: true,
     webPreferences: {
-      webSecurity: false
+      webSecurity: false,
+      nodeIntegration: true,
+      enableRemoteModule: true
     },
     show: false
   })
