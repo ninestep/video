@@ -42,7 +42,8 @@ jobs:
           del .npmrc
 
       - name: Set env
-          run: echo ::set-env name=RELEASE_VERSION::${GITHUB_REF:10}
+          env:
+            RELEASE_VERSION: ${GITHUB_REF:10}
       # step3: change version
       - name: remove .npmrc
         if: matrix.os == 'windows-2019'
