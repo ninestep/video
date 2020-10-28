@@ -43,6 +43,11 @@ jobs:
         run: |
           del .npmrc
 
+      - name: remove .npmrc
+        if: matrix.os == 'macos-10.15'
+        run: |
+          rm -rf .npmrc
+
       # step3: npm install
       - name: npm install
         run: |
