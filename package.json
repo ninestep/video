@@ -79,7 +79,6 @@
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.0.20",
     "axios": "^0.18.0",
-    "electron": "^10.1.5",
     "element-ui": "^2.13.2",
     "fluent-ffmpeg": "^2.1.2",
     "nedb": "^1.8.0",
@@ -112,6 +111,7 @@
     "css-loader": "^0.28.11",
     "del": "^3.0.0",
     "devtron": "^1.4.0",
+    "electron": "^10.1.5",
     "electron-builder": "^20.44.4",
     "electron-debug": "^1.5.0",
     "electron-devtools-installer": "^2.2.4",
