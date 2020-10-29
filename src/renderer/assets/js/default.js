@@ -1,30 +1,12 @@
 export const sourceList = [
   {
-    'name': '全网',
-    'url': 'https://www.playm3u8.cn/jiexi.php?url='
+    'name': 'm3u8解析',
+    'url': 'http://m3u8.tv.janan.net/json.php?url=',
+    'type': 'json'
   },
   {
-    'name': '爱看云',
-    'url': 'http://api.ikancloud.cn/?url='
-  },
-  {
-    'name': 'H8无广告视频解析',
-    'url': 'https://www.h8jx.com/jiexi.php?url='
-  },
-  {
-    'name': 'Playm3u8解析',
-    'url': 'https://playm3u8jx.bjtjr.net/playm3u8.php?url='
-  },
-  {
-    'name': '1717云',
-    'url': 'https://www.1717yun.com/jx/ty.php?url='
-  },
-  {
-    'name': '88解析',
-    'url': 'https://vip.88jiexi.com/?url='
-  },
-  {
-    'name': '200视频解析',
-    'url': 'https://vip.66parse.club/?url='
+    'name': '七哥视频解析',
+    'url': 'https://jx.mmkv.cn/json.php?url=',
+    'type': 'json'
   }
 ]
