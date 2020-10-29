@@ -1,18 +1,9 @@
 'use strict'
 
-import { app, BrowserWindow } from 'electron'
+import {app, BrowserWindow} from 'electron'
 
 import VideoServer from './VideoServer'
-import { videoSupport } from './ffmpeg-helper'
-/**
- * Auto Updater
- *
- * Uncomment the following code below and install `electron-updater` to
- * support auto updating. Code Signing with a valid certificate is required.
- * https://simulatedgreg.gitbooks.io/electron-vue/content/en/using-electron-builder.html#auto-updating
- */
-
-import { autoUpdater } from 'electron-updater'
+import {videoSupport} from './ffmpeg-helper'
 
 /**
  * Set `__static` path to static files in production
@@ -73,31 +64,18 @@ app.on('activate', () => {
  * support auto updating. Code Signing with a valid certificate is required.
  * https://simulatedgreg.gitbooks.io/electron-vue/content/en/using-electron-builder.html#auto-updating
  */
-autoUpdater.logger = require('electron-log')
-autoUpdater.logger.transports.file.level = 'info'
+
+/*
+import { autoUpdater } from 'electron-updater'
 
 autoUpdater.on('update-downloaded', () => {
-  console.log('update-downloaded lats quitAndInstall')
-
-  if (process.env.NODE_ENV === 'production') {
-    dialog.showMessageBox({
-      type: 'info',
-      title: 'Found Updates',
-      message: 'Found updates, do you want update now?',
-      buttons: ['Sure', 'No']
-    }, (buttonIndex) => {
-      if (buttonIndex === 0) {
-        const isSilent = true
-        const isForceRunAfter = true
-        autoUpdater.quitAndInstall(isSilent, isForceRunAfter)
-      }
-    })
-  }
+  autoUpdater.quitAndInstall()
 })
 
 app.on('ready', () => {
   if (process.env.NODE_ENV === 'production') autoUpdater.checkForUpdates()
 })
+ */
 
 const ipc = require('electron').ipcMain
 const dialog = require('electron').dialog
