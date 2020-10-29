@@ -202,12 +202,14 @@ import videojs from 'video.js'
 import 'videojs-contrib-hls'
 import 'video.js/dist/video-js.css'
 import '../assets/js/StreamPlayTech.js'
-import {cutVideo, secondToTimeStr, videoSupport} from '../../main/ffmpeg-helper'
+import {cutVideo, secondToTimeStr} from '../../main/ffmpeg-helper'
 import {nedbFind, nedbUpdate} from '../assets/js/until'
-import VideoServer from '../../main/VideoServer'
 // import {readJson} from '../assets/js/until'
 const ipc = require('electron').ipcRenderer
 
+const puppeteer = require('puppeteer')
+let page = null
+let browser = null
 export default {
   name: 'landing-page',
   components: {
@@ -222,7 +224,6 @@ export default {
       },
       replay: false,
       source: '',
-      type: '',
       list_form: {
         start_time: 0,
         end_time: 0
@@ -318,46 +319,81 @@ export default {
       this.relpay = true
       this.search()
     },
-    isVideoSite: function (url) {
-      for (const domain of this.videoSiteList) {
-        if (url.indexOf(domain) >= 0) {
+    search () {
+      const ext = ['.wmv', '.avi', '.dat',
+        '.asf', '.mpeg', '.mpg', '.mp4',
+        '.rm', '.rmvb', '.ram', '.flv',
+        '.mp4', '.3gp', '.mov',
+        '.divx', '.dv', '.vob', '.mkv',
+        '.qt', '.cpk', '.fli', '.flc',
+        '.f4v', '.m4v', '.mod', '.m2t',
+        '.swf', '.webm', '.mts', '.m2ts'
+      ]
+      for (const x in ext) {
+        if (this.form.source.toLowerCase().lastIndexOf(ext[x]) >= 0) {
+          this.$message.error('该视频格式不支持在线播放，请下载后播放')
           return true
         }
       }
-      return false
-    },
-    search () {
-      if (this.isVideoSite(this.form.source.toLowerCase())) {
-        let _ = this
-        this.getSource().then(async () => {
-          this.sourceLoading += 1
-          this.tableData.forEach((item, index) => {
-            this.$set(item, 'status', 'loading')
-            this.$http.get(item.url + this.form.source).then(res => {
-              if (res.data.url) {
-                _.$set(item, 'status', 'success')
-                _.$set(item, 'm3u8', res.data.url)
-                if (_.player.readyState() === 0 || _.replay) {
-                  _.replay = false
-                  _.play(item)
-                }
-                nedbUpdate('source', {'_id': item['_id']}, {all: item.all + 1, success: item.success + 1})
-              } else {
-                _.$set(item, 'status', 'fail')
-                nedbUpdate('source', {'_id': item['_id']}, {all: item.all + 1})
-              }
-            })
-          })
-        }).catch(() => {
-          this.$message.error('解析网站读取失败')
-        }).finally(() => {
-          this.sourceLoading = 0
-        })
-      } else {
+      if (this.form.source.toLowerCase().indexOf('.m3u8') >= 0) {
         this.play({
           m3u8: this.form.source
         })
+        return true
       }
+
+      let _ = this
+      this.getSource().then(async () => {
+        this.sourceLoading += 1
+        browser = await puppeteer.launch()// {headless: false}
+        browser.on('close', function () {
+          // eslint-disable-next-line no-unused-expressions
+          _.sourceLoading === 0
+        })
+        // 设置浏览器视窗
+        for (const json of this.tableData) {
+          this.sourceLoading += 1
+          this.$set(json, 'status', 'loading')
+          let index = this.tableData.indexOf(json)
+          await this.login(json, index)
+          this.sourceLoading -= 1
+        }
+        this.sourceLoading -= 1
+        browser.close()
+      }).catch(() => {})
+    },
+    async login (json, index) {
+      let _ = this
+      page = await browser.newPage()
+      page.on('response', async function (response) {
+        try {
+          const text = await response.text()
+          if (text.indexOf('#EXTM3U') === 0) {
+            _.$set(json, 'm3u8', response.url())
+            if (_.player.readyState() === 0 || _.replay) {
+              _.replay = false
+              _.play(json)
+            }
+            let divHandle = await page.$('body')
+            await page.evaluate((el, value) => el.setAttribute('class', value),
+              divHandle,
+              'getVideoSuccess'
+            )
+          }
+        } catch (e) {
+          return false
+        }
+      })
+      await page.goto(json.url + this.form.source)
+      try {
+        await page.waitForSelector('.getVideoSuccess', {timeout: 30000})
+        _.$set(json, 'status', 'success')
+        await nedbUpdate('source', {'_id': json['_id']}, {all: json.all + 1, success: json.success + 1})
+      } catch (e) {
+        _.$set(json, 'status', 'fail')
+        await nedbUpdate('source', {'_id': json['_id']}, {all: json.all + 1})
+      }
+      await page.close()
     },
     async getVideo () {
       let _ = this

@@ -257,7 +257,6 @@ export default {
         } else {
           this.star = false
         }
-        console.log(item)
         this.$set(this, 'detail', item)
         // this.detail = item
         this.detailShow = true

@@ -14,11 +14,11 @@ export function importDefault () {
       new Promise((resolve) => {
         for (const item of sourceList) {
           nedbCount('source', {url: item.url}).then(res => {
-            console.log(item, res)
             if (res <= 0) {
               nedbSave('source', {
                 name: item.name,
                 url: item.url,
+                dataType: item.type,
                 all: 0,
                 success: 0
               })
