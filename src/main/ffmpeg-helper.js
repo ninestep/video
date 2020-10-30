@@ -95,7 +95,6 @@ export function videoSupport (videoPath) {
 }
 export function cutVideo (videoPath, startTime, endTime, outDir, name = null) {
   return new Promise(function (resolve, reject) {
-    console.log(outDir)
     new Promise(function (resolve, reject) {
       fs.stat(outDir, function (err, stats) {
         if (err || !stats.isDirectory()) {

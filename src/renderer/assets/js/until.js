@@ -5,7 +5,7 @@ const path = require('path')
 const xml2js = require('xml2js')
 const Datastore = require('nedb')
 const dbName = path.join(__dirname, 'videoEdit')
-const db = new Datastore({ filename: dbName, autoload: true })
+let db = new Datastore({ filename: dbName, autoload: true })
 export function importDefault () {
   const lockFile = path.join(__dirname, 'run.lock')
   fs.stat(lockFile, function (err, stats) {
@@ -187,7 +187,16 @@ export function getVideoType (url) {
   })
 }
 
-export function nedbSave (type, data) {
+export function setNeDb (path = '') {
+  if (path) {
+    db = new Datastore({ filename: path, autoload: true })
+  } else {
+    db = new Datastore({ filename: dbName, autoload: true })
+  }
+}
+
+export function nedbSave (type, data, path = '') {
+  setNeDb(path)
   return new Promise((resolve, reject) => {
     db.insert({type: type, ...data}, (err, newDoc) => {
       if (err) {
@@ -199,7 +208,8 @@ export function nedbSave (type, data) {
   })
 }
 
-export function nedbFind (type, map, sort) {
+export function nedbFind (type, map, sort, path = '') {
+  setNeDb(path)
   return new Promise((resolve, reject) => {
     db.find({ type: type, ...map }).sort(sort).exec(function (err, docs) {
       if (err) {
@@ -211,7 +221,8 @@ export function nedbFind (type, map, sort) {
   })
 }
 
-export function nedbRemove (type, map) {
+export function nedbRemove (type, map, path = '') {
+  setNeDb(path)
   return new Promise((resolve, reject) => {
     db.remove({ type: type, ...map }, {}, function (err, docs) {
       if (err) {
@@ -222,7 +233,8 @@ export function nedbRemove (type, map) {
     })
   })
 }
-export function nedbCount (type, map) {
+export function nedbCount (type, map, path = '') {
+  setNeDb(path)
   return new Promise((resolve, reject) => {
     db.count({ type: type, ...map }, function (err, docs) {
       if (err) {
@@ -233,13 +245,31 @@ export function nedbCount (type, map) {
     })
   })
 }
-export function nedbUpdate (type, map, data) {
+export function nedbUpdate (type, map, data, path = '') {
+  setNeDb(path)
   return new Promise((resolve, reject) => {
     db.update({ type: type, ...map }, { $set: {...data} }, { }, function (err, docs) {
       if (err) {
         reject(err)
       } else {
         resolve(docs)
+      }
+    })
+  })
+}
+export function nedbPage (type, map, sort = {_id: -1}, page = 1, size = 15, path = '') {
+  setNeDb(path)
+  return new Promise((resolve, reject) => {
+    const start = (parseInt(page) - 1) * size
+    db.find({type: type, ...map}).sort(sort).skip(start).limit(size).exec(function (err, docs) {
+      if (err) {
+        reject(err)
+      } else {
+        resolve({
+          page: page,
+          size: size,
+          rows: docs
+        })
       }
     })
   })

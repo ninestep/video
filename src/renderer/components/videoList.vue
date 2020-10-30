@@ -84,7 +84,7 @@
                   fixed="right"
                   label="操作">
                 <template slot-scope="scope">
-                  <el-button type="text" size="small" @click="play(scope.row,item)">播放</el-button>
+                  <el-button type="text" size="small" @click="play(scope.row,item,detail)">播放</el-button>
                 </template>
               </el-table-column>
             </el-table>
@@ -319,8 +319,8 @@ export default {
       this.videoList = []
       this.getList()
     },
-    play: function (item, detail) {
-      this.$router.push({name: 'landing-page', params: {item: item, detail: detail}})
+    play: function (item, videoList, info) {
+      this.$router.push({name: 'landing-page', params: {item: item, detail: videoList, info: info}})
     }
   }
 }

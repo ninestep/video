@@ -13,6 +13,7 @@
           <el-menu-item index="/">视频列表</el-menu-item>
           <el-menu-item index="/collect">收藏夹</el-menu-item>
           <el-menu-item index="/landing">处理中心</el-menu-item>
+          <el-menu-item index="/cutList">切片列表</el-menu-item>
           <el-menu-item index="/setting">配置中心</el-menu-item>
         </el-menu>
       </el-header>

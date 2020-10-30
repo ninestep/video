@@ -80,18 +80,17 @@ app.on('ready', () => {
 const ipc = require('electron').ipcMain
 const dialog = require('electron').dialog
 ipc.on('open-dir-dialog', function (event) {
+  console.log(1)
   dialog.showOpenDialog({
     properties: ['openFile', 'openDirectory']
-  }, function (files) {
-    if (files) event.sender.send('selected-directory', files)
-  })
+  }).then(files => { if (files) mainWindow.webContents.send('selected-directory', files) })
 })
 ipc.on('open-file-dialog', function (event, args) {
   dialog.showOpenDialog({
     properties: ['openFile'],
     filters: args
-  }, function (files) {
-    if (files) event.sender.send('selected-file', files)
+  }).then(files => {
+    if (files) mainWindow.webContents.send('selected-file', files)
   })
 })
 ipc.on('open-video', function (event, args) {

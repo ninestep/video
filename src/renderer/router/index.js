@@ -26,6 +26,11 @@ export default new Router({
       component: require('@/components/Setting').default
     },
     {
+      path: '/cutList',
+      name: 'cut-list',
+      component: require('@/components/cutList').default
+    },
+    {
       path: '*',
       redirect: '/'
     }

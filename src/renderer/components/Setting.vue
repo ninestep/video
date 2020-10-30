@@ -66,11 +66,26 @@
         </el-form>
       </el-card>
     </el-drawer>
+
+    <el-card class="box-card">
+      <div slot="header" class="clearfix">
+        <span>其他配置</span>
+        <el-button v-if="editStatus"  style="float: right;" type="success" @click="saveSetting">保存</el-button>
+        <el-button v-else style="float: right;" type="success" @click="setEditStatus">编辑</el-button>
+      </div>
+      <el-form ref="form" :model="form" label-width="180px">
+        <el-form-item label="切片存储路径">
+          <el-input placeholder="请选择切片存储路径" :disabled="!editStatus" v-model="form.savePath">
+            <el-button type="primary" slot="append" @click="chooseDir" :disabled="!editStatus">选择</el-button>
+          </el-input>
+        </el-form-item>
+      </el-form>
+    </el-card>
   </div>
 </template>
 
 <script>
-import {nedbCount, nedbFind, nedbRemove, nedbSave, readJson} from '../assets/js/until'
+import {nedbCount, nedbFind, nedbRemove, nedbSave, nedbUpdate, readJson} from '../assets/js/until'
 import path from 'path'
 const ipc = require('electron').ipcRenderer
 export default {
@@ -83,13 +98,51 @@ export default {
         url: '',
         method: 'get'
       },
+      form: {
+        savePath: ''
+      },
+      editStatus: false,
       tableData: []
     }
   },
   mounted () {
     this.getSource()
+    nedbFind('setting', {}).then(res => {
+      if (res.length > 0) {
+        this.form = res[0]
+      }
+    })
   },
   methods: {
+    chooseDir: function () {
+      let _ = this
+      ipc.once('selected-directory', function (event, path) {
+        if (path.filePaths.length >= 1) {
+          _.form.savePath = path.filePaths[0]
+        }
+      })
+      ipc.send('open-dir-dialog')
+    },
+    setEditStatus: function () {
+      this.editStatus = true
+    },
+    saveSetting: function () {
+      if (this.form._id) {
+        const _id = this.form._id
+        delete this.form._id
+        nedbUpdate('setting', {_id: _id}, this.form).then(res => {
+          this.editStatus = false
+        }).catch((err) => {
+          this.$message.error(err)
+        })
+      } else {
+        nedbSave('setting', this.form).then(res => {
+          this.editStatus = false
+        }).catch((err) => {
+          this.$message.error(err)
+        })
+      }
+    },
     getSource: function () {
       nedbFind('source', {}).then(res => {
         this.tableData = res

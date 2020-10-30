@@ -141,10 +141,26 @@
               <el-tab-pane label="输出">
 
                 <el-card class="box-card" style="padding: 0;margin-top: 20px">
-                  <el-form ref="form" :model="form" >
-                    <el-form-item label="文件夹">
-                      <el-input v-model="form.export" placeholder="请选择输出文件夹">
-                        <el-button slot="append" icon="el-icon-folder-opened" type="primary" @click="chooseDir"></el-button>
+                  <el-form ref="cut_form" :model="form" :rules="{
+                    title:[{ required: true, message: '请输入视频标题', trigger: 'blur' }],
+                    desc:[{ required: true, message: '请输入视频简介', trigger: 'blur' }]
+                  }" >
+                    <el-form-item label="标题" prop="title">
+                      <el-input v-model="form.title" placeholder="请输入视频标题">
+                      </el-input>
+                    </el-form-item>
+                    <el-form-item label="简介" prop="desc">
+                      <el-input
+                          v-model="form.desc"
+                                type="textarea"
+                                :rows="2"
+                          placeholder="请输入视频简介">
+                      </el-input>
+                    </el-form-item>
+                    <el-form-item label="关键词">
+                      <el-input
+                          v-model="form.tags"
+                          placeholder="请输入视频关键词用‘,’号分割">
                       </el-input>
                     </el-form-item>
                   </el-form>
@@ -202,14 +218,13 @@ import videojs from 'video.js'
 import 'videojs-contrib-hls'
 import 'video.js/dist/video-js.css'
 import '../assets/js/StreamPlayTech.js'
-import {cutVideo, secondToTimeStr} from '../../main/ffmpeg-helper'
-import {nedbFind, nedbUpdate} from '../assets/js/until'
-// import {readJson} from '../assets/js/until'
-const ipc = require('electron').ipcRenderer
+import {cutVideo, secondToTimeStr, videoSupport} from '../../main/ffmpeg-helper'
+import {nedbFind, nedbSave, nedbUpdate} from '../assets/js/until'
+import VideoServer from '../../main/VideoServer'
+import path from 'path'
 
-const puppeteer = require('puppeteer')
-let page = null
-let browser = null
+const ipc = require('electron').ipcRenderer
+// import {readJson} from '../assets/js/until'
 export default {
   name: 'landing-page',
   components: {
@@ -220,7 +235,10 @@ export default {
       form: {
         source: '',
         export: '',
-        name: ''
+        name: '',
+        title: '',
+        desc: '',
+        tags: ''
       },
       replay: false,
       source: '',
@@ -228,6 +246,7 @@ export default {
         start_time: 0,
         end_time: 0
       },
+      setting: {},
       sourceLoading: 0,
       height: 500,
       current_time: 0,
@@ -260,19 +279,25 @@ export default {
     this.player.dispose()
   },
   async mounted () {
+    nedbFind('setting', {}).then(res => {
+      if (res.length <= 0 || !res[0]['savePath']) {
+        this.$message.error('请先到配置中心设置切片存储路径，否则无法切片')
+      } else {
+        this.setting = res[0]
+      }
+    })
     if (this.$route.params.detail) {
       this.detail = this.$route.params.detail
+    }
+    if (this.$route.params.info) {
+      this.form.title = this.$route.params.info.name
+      this.form.desc = this.$route.params.info.des
     }
     await this.getVideo()
     let _ = this
     if (this.$route.params.item) {
       this.dlPlay(this.$route.params.item)
     }
-    ipc.on('selected-directory', function (event, path) {
-      if (path.length >= 1) {
-        _.form.export = path[0]
-      }
-    })
     ipc.on('resize', function () {
       const vid = document.getElementById('my-video')
       if (vid) {
@@ -319,81 +344,46 @@ export default {
       this.relpay = true
       this.search()
     },
-    search () {
-      const ext = ['.wmv', '.avi', '.dat',
-        '.asf', '.mpeg', '.mpg', '.mp4',
-        '.rm', '.rmvb', '.ram', '.flv',
-        '.mp4', '.3gp', '.mov',
-        '.divx', '.dv', '.vob', '.mkv',
-        '.qt', '.cpk', '.fli', '.flc',
-        '.f4v', '.m4v', '.mod', '.m2t',
-        '.swf', '.webm', '.mts', '.m2ts'
-      ]
-      for (const x in ext) {
-        if (this.form.source.toLowerCase().lastIndexOf(ext[x]) >= 0) {
-          this.$message.error('该视频格式不支持在线播放，请下载后播放')
+    isVideoSite: function (url) {
+      for (const domain of this.videoSiteList) {
+        if (url.indexOf(domain) >= 0) {
           return true
         }
       }
-      if (this.form.source.toLowerCase().indexOf('.m3u8') >= 0) {
+      return false
+    },
+    search () {
+      if (this.isVideoSite(this.form.source.toLowerCase())) {
+        let _ = this
+        this.getSource().then(async () => {
+          this.sourceLoading += 1
+          this.tableData.forEach((item, index) => {
+            this.$set(item, 'status', 'loading')
+            this.$http.get(item.url + this.form.source).then(res => {
+              if (res.data.url) {
+                _.$set(item, 'status', 'success')
+                _.$set(item, 'm3u8', res.data.url)
+                if (_.player.readyState() === 0 || _.replay) {
+                  _.replay = false
+                  _.play(item)
+                }
+                nedbUpdate('source', {'_id': item['_id']}, {all: item.all + 1, success: item.success + 1})
+              } else {
+                _.$set(item, 'status', 'fail')
+                nedbUpdate('source', {'_id': item['_id']}, {all: item.all + 1})
+              }
+            })
+          })
+        }).catch(() => {
+          this.$message.error('解析网站读取失败')
+        }).finally(() => {
+          this.sourceLoading = 0
+        })
+      } else {
         this.play({
           m3u8: this.form.source
         })
-        return true
       }
-
-      let _ = this
-      this.getSource().then(async () => {
-        this.sourceLoading += 1
-        browser = await puppeteer.launch()// {headless: false}
-        browser.on('close', function () {
-          // eslint-disable-next-line no-unused-expressions
-          _.sourceLoading === 0
-        })
-        // 设置浏览器视窗
-        for (const json of this.tableData) {
-          this.sourceLoading += 1
-          this.$set(json, 'status', 'loading')
-          let index = this.tableData.indexOf(json)
-          await this.login(json, index)
-          this.sourceLoading -= 1
-        }
-        this.sourceLoading -= 1
-        browser.close()
-      }).catch(() => {})
-    },
-    async login (json, index) {
-      let _ = this
-      page = await browser.newPage()
-      page.on('response', async function (response) {
-        try {
-          const text = await response.text()
-          if (text.indexOf('#EXTM3U') === 0) {
-            _.$set(json, 'm3u8', response.url())
-            if (_.player.readyState() === 0 || _.replay) {
-              _.replay = false
-              _.play(json)
-            }
-            let divHandle = await page.$('body')
-            await page.evaluate((el, value) => el.setAttribute('class', value),
-              divHandle,
-              'getVideoSuccess'
-            )
-          }
-        } catch (e) {
-          return false
-        }
-      })
-      await page.goto(json.url + this.form.source)
-      try {
-        await page.waitForSelector('.getVideoSuccess', {timeout: 30000})
-        _.$set(json, 'status', 'success')
-        await nedbUpdate('source', {'_id': json['_id']}, {all: json.all + 1, success: json.success + 1})
-      } catch (e) {
-        _.$set(json, 'status', 'fail')
-        await nedbUpdate('source', {'_id': json['_id']}, {all: json.all + 1})
-      }
-      await page.close()
     },
     async getVideo () {
       let _ = this
@@ -514,15 +504,31 @@ export default {
       ]
     },
     cut: function () {
-      this.cutData.forEach((item) => {
-        if (item.status === 'wait') {
-          item.status = 'loading'
-          cutVideo(this.source, item.start_time, item.end_time, this.form.export, item.name)
-            .then(res => {
-              item.status = 'success'
-            }).catch((e) => {
-              item.status = 'fail'
-            })
+      this.$refs['cut_form'].validate((valid) => {
+        if (valid) {
+          this.cutData.forEach((item) => {
+            if (item.status === 'wait') {
+              item.status = 'loading'
+              cutVideo(this.source, item.start_time, item.end_time, path.join(this.setting.savePath, this.form.title), item.name)
+                .then(res => {
+                  nedbSave('videoList', {
+                    title: this.form.title,
+                    name: item.name,
+                    startTime: item.start_time,
+                    endTime: item.end_time,
+                    desc: this.form.desc,
+                    tags: this.form.tags,
+                    path: path.join(this.setting.savePath, this.form.title, item.name, '.mp4'),
+                    create_time: Date.parse(new Date())
+                  }, path.join(this.setting.savePath, 'videoList'))
+                  item.status = 'success'
+                }).catch((e) => {
+                  item.status = 'fail'
+                })
+            }
+          })
+        } else {
+          return false
         }
       })
     },
