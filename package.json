@@ -1,6 +1,6 @@
 {
   "name": "video_edit",
-  "version": "0.1.4",
+  "version": "0.1.6",
   "author": "杨兵 <859696354@qq.com>",
   "description": "An electron-vue project",
   "license": "Apache License",
