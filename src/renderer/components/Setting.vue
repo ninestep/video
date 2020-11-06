@@ -76,8 +76,36 @@
       <el-form ref="form" :model="form" label-width="180px">
         <el-form-item label="切片存储路径">
           <el-input placeholder="请选择切片存储路径" :disabled="!editStatus" v-model="form.savePath">
-            <el-button type="primary" slot="append" @click="chooseDir" :disabled="!editStatus">选择</el-button>
+            <el-button type="primary" slot="append" @click="chooseDir('savePath',-1)" :disabled="!editStatus">选择</el-button>
           </el-input>
+        </el-form-item>
+        <el-form-item label="发布配置">
+          <el-tabs type="border-card">
+            <el-tab-pane v-for="(type,index) in form.release" :key="index" :label="type.name">
+                <el-form-item label="片头路径">
+                  <el-input placeholder="请选择片头路径" clearable :disabled="!editStatus" v-model="type.front">
+                    <el-button type="primary" slot="append" @click="chooseFile('release',index,'front')" :disabled="!editStatus">选择</el-button>
+                  </el-input>
+                </el-form-item>
+                <el-form-item label="片尾路径">
+                  <el-input placeholder="请选择片尾路径" clearable :disabled="!editStatus" v-model="type.end">
+                    <el-button type="primary" slot="append" @click="chooseFile('release',index,'end')" :disabled="!editStatus">选择</el-button>
+                  </el-input>
+                </el-form-item>
+                <el-form-item label="水印路径">
+                  <el-input placeholder="请选择水印路径" clearable :disabled="!editStatus" v-model="type.watermark">
+                    <el-button type="primary" slot="append" @click="chooseFile('release',index,'watermark',[
+                          { name: '水印', extensions: ['jpg','png','bmp'] }
+                        ])" :disabled="!editStatus">选择</el-button>
+                  </el-input>
+                </el-form-item>
+                <el-form-item label="保存路径">
+                  <el-input placeholder="请选择保存路径" :disabled="!editStatus" v-model="type.savePath">
+                    <el-button type="primary" slot="append" @click="chooseDir('release',index,'savePath')" :disabled="!editStatus">选择</el-button>
+                  </el-input>
+                </el-form-item>
+            </el-tab-pane>
+          </el-tabs>
         </el-form-item>
       </el-form>
     </el-card>
@@ -99,7 +127,17 @@ export default {
         method: 'get'
       },
       form: {
-        savePath: ''
+        savePath: '',
+        release: [
+          {
+            type: 'toutiao',
+            name: '头条'
+          },
+          {
+            type: 'douyin',
+            name: '抖音'
+          }
+        ]
       },
       editStatus: false,
       tableData: []
@@ -110,15 +148,50 @@ export default {
     nedbFind('setting', {}).then(res => {
       if (res.length > 0) {
         this.form = res[0]
+        console.log(this.form)
+        if (this.form.release === undefined || this.form.release.length <= 0) {
+          this.form.release = [
+            {
+              type: 'toutiao',
+              name: '头条'
+            },
+            {
+              type: 'douyin',
+              name: '抖音'
+            }
+          ]
+        }
       }
     })
   },
   methods: {
-    chooseDir: function () {
+    changeType: function (tab, event) {
+      console.log(tab, event)
+    },
+    chooseFile: function (item, index = -1, key = '', args = [
+      { name: '视频', extensions: ['mp4'] }
+    ]) {
+      let _ = this
+      ipc.once('selected-file', function (event, path) {
+        if (path.filePaths.length >= 1) {
+          if (index === -1) {
+            _.$set(_['form'], item, path.filePaths[0])
+          } else {
+            _.$set(_['form'][item][index], key, path.filePaths[0])
+          }
+        }
+      })
+      ipc.send('open-file-dialog', args)
+    },
+    chooseDir: function (item, index = -1, key = '') {
       let _ = this
       ipc.once('selected-directory', function (event, path) {
         if (path.filePaths.length >= 1) {
-          _.form.savePath = path.filePaths[0]
+          if (index === -1) {
+            _.$set(_['form'], item, path.filePaths[0])
+          } else {
+            _.$set(_['form'][item][index], key, path.filePaths[0])
+          }
         }
       })
       ipc.send('open-dir-dialog')
@@ -220,5 +293,7 @@ export default {
 </script>
 
 <style scoped>
-
+.box-card{
+  margin-bottom: 20px;
+}
 </style>

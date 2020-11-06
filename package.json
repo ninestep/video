@@ -1,6 +1,6 @@
 {
   "name": "video_edit",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "author": "杨兵 <859696354@qq.com>",
   "description": "An electron-vue project",
   "license": "Apache License",
@@ -78,6 +78,7 @@
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.0.20",
+    "@ffprobe-installer/ffprobe": "^1.1.0",
     "axios": "^0.18.0",
     "element-ui": "^2.13.2",
     "fluent-ffmpeg": "^2.1.2",
