@@ -1,6 +1,6 @@
 {
   "name": "video_edit",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "author": "杨兵 <859696354@qq.com>",
   "description": "An electron-vue project",
   "license": "Apache License",
@@ -26,6 +26,13 @@
     "productName": "视频剪辑",
     "asar": false,
     "appId": "com.video.edit",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "ninestep",
+        "repo": "video"
+      }
+    ],
     "directories": {
       "output": "build"
     },
@@ -70,7 +77,8 @@
       "target": [
         "nsis",
         "zip"
-      ]
+      ],
+      "publish": ["github"]
     },
     "linux": {
       "icon": "build/icons"
