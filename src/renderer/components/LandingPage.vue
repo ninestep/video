@@ -223,7 +223,7 @@ import {nedbFind, nedbSave, nedbUpdate} from '../assets/js/until'
 import VideoServer from '../../main/VideoServer'
 import path from 'path'
 
-const ipc = require('electron').ipcRenderer
+import {ipcRenderer} from 'electron'
 // import {readJson} from '../assets/js/until'
 export default {
   name: 'landing-page',
@@ -232,6 +232,7 @@ export default {
   },
   data: function () {
     return {
+      ipc: ipcRenderer,
       form: {
         source: '',
         export: '',
@@ -298,7 +299,7 @@ export default {
     if (this.$route.params.item) {
       this.dlPlay(this.$route.params.item)
     }
-    ipc.on('resize', function () {
+    this.ipc.on('resize', function () {
       const vid = document.getElementById('my-video')
       if (vid) {
         const size = _.getWindowSize()
@@ -533,7 +534,7 @@ export default {
       })
     },
     chooseDir: function () {
-      ipc.send('open-dir-dialog')
+      this.ipc.send('open-dir-dialog')
     },
     del: function (item) {
       const index = this.tableData.indexOf(item)

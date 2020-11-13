@@ -44,7 +44,6 @@ function createWindow () {
   mainWindow.maximize()
   mainWindow.show()
   mainWindow.loadURL(winURL)
-
   mainWindow.on('closed', () => {
     mainWindow = null
   })
@@ -53,7 +52,9 @@ function createWindow () {
   })
 }
 
-app.on('ready', createWindow)
+app.on('ready', () => {
+  createWindow()
+})
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -67,19 +68,9 @@ app.on('activate', () => {
   }
 })
 
-autoUpdater.on('update-downloaded', () => {
-  autoUpdater.quitAndInstall()
-})
-
-app.on('ready', () => {
-  // if (process.env.NODE_ENV === 'production')
-  autoUpdater.checkForUpdates()
-})
-
 const ipc = require('electron').ipcMain
 const dialog = require('electron').dialog
 ipc.on('open-dir-dialog', function (event) {
-  console.log(1)
   dialog.showOpenDialog({
     properties: ['openFile', 'openDirectory']
   }).then(files => { if (files) mainWindow.webContents.send('selected-directory', files) })
@@ -101,6 +92,24 @@ ipc.on('open-video', function (event, args) {
       onVideoFileSeleted(result[0])
     }
   })
+})
+autoUpdater.on('checking-for-update', function () {
+  sendUpdate({type: 'checking'})
+})
+autoUpdater.on('update-available', function (info) {
+  sendUpdate({type: 'available', info: info})
+})
+autoUpdater.on('update-not-available', function (info) {
+  sendUpdate({type: 'not-available'})
+})
+autoUpdater.on('update-downloaded', () => {
+  autoUpdater.quitAndInstall()
+})
+autoUpdater.on('download-progress', info => {
+  sendUpdate({type: 'download-progress', info: info})
+})
+autoUpdater.on('error', message => {
+  sendUpdate({type: 'error', info: message})
 })
 let httpServer
 let isRendererReady = false
@@ -162,4 +171,16 @@ function onVideoFileSeleted (videoFilePath) {
       console.log('showMessageBox', index)
     })
   })
+}
+ipc.on('update', () => {
+  autoUpdater.autoDownload = false
+
+  if (process.env.NODE_ENV === 'production') { autoUpdater.checkForUpdates() }
+})
+ipc.on('download-update', () => {
+  autoUpdater.downloadUpdate()
+})
+function sendUpdate (args) {
+  console.log(args)
+  mainWindow.webContents.send('update', args)
 }
