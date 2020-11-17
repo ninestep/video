@@ -20,6 +20,10 @@
       <el-main class="main" ref="main" style="padding: 0">
         <router-view></router-view>
       </el-main>
+      <el-footer>
+        <el-progress class="update_progress" :text-inside="true" :stroke-width="26" :percentage="percent"
+                     v-if="close===false"></el-progress>
+      </el-footer>
     </el-container>
     <el-dialog
         :title="versionInfo.version"
@@ -30,8 +34,6 @@
         width="30%">
       <div class="update_info">
         <span v-html="versionInfo.releaseNotes"></span>
-        <el-progress class="update_progress" :text-inside="true" :stroke-width="26" :percentage="percent"
-                     v-if="close===false"></el-progress>
       </div>
       <span slot="footer" class="update_footer" v-if="close">
         <el-button @click="dialogVisible = false">取 消</el-button>
@@ -96,6 +98,8 @@ export default {
     downloadUpdate: function () {
       this.ipc.send('download-update')
       this.close = false
+      this.dialogVisible = false
+      this.$notify.info('开始下载，请关注底部进度条')
     },
     getWindowSize: function () {
       const {offsetWidth, offsetHeight} = document.documentElement

@@ -6,14 +6,6 @@
       v-loading="loading"
       row-key="_id"
       style="width: 100%">
-    <el-table-column type="expand">
-      <template slot-scope="props" v-if="props.row.progress">
-        <el-row :gutter="10">
-         <el-col :span="20"><el-progress :percentage="props.row.progress.percent" :format="format"/></el-col>
-         <el-col :span="4">{{props.row.progress.name}}</el-col>
-        </el-row>
-      </template>
-    </el-table-column>
     <el-table-column
         prop="title"
         label="影片名"/>
@@ -36,7 +28,7 @@
               v-for="(item,index) in setting.release"
               :key="index"
               :label="item.name"
-              :value="{front:item.front,end:item.end,watermark:item.watermark,name:item.name}">
+              :value="{front:item.front,end:item.end,watermark:item.watermark,name:item.name,savePath:item.savePath}">
           </el-option>
         </el-select>
       </template>
@@ -63,18 +55,28 @@
       layout="prev, pager, next"
       :total="pageInfo.last_page">
   </el-pagination>
+  <el-dialog
+      title="提示"
+      :visible="loading"
+      width="30%">
+        <el-row :gutter="10">
+          <el-col :span="20"><el-progress :percentage="plan.percent" :format="format"/></el-col>
+          <el-col :span="4">{{plan.name}}</el-col>
+        </el-row>
+  </el-dialog>
 </div>
 </template>
 
 <script>
 import {nedbFind, nedbPage} from '../assets/js/until'
 import path from 'path'
-import {conactVideo, secondToTimeStr} from '../../main/ffmpeg-helper'
+import {conactVideo, secondToTimeStr, water} from '../../main/ffmpeg-helper'
 
 export default {
   name: 'cutList',
   mounted () {
     nedbFind('setting', {}).then(res => {
+      console.log(res)
       if (res.length <= 0 || !res[0]['savePath']) {
         this.$message.error('请先到配置中心设置切片存储路径，否则无法切片')
       } else {
@@ -91,10 +93,11 @@ export default {
         page_size: 10,
         count: 0
       },
-      sendType: '',
-      loading: '',
+      sendType: {},
+      loading: false,
       tableList: [],
       setting: {},
+      plan: {},
       query: {
         type: 0,
         word: '',
@@ -110,15 +113,24 @@ export default {
     conact: function (row) {
       this.loading = true
       conactVideo(row.path,
-        this.setting.savePath,
+        this.sendType.savePath,
         this.sendType.front,
-        this.sendType.end,
-        this.sendType.watermark, 'rt', (progress) => {
-          this.$refs.table.toggleRowExpansion(row, true)
-          this.$set(row, 'progress', progress)
+        this.sendType.end, (progress) => {
+          this.plan = progress
         }
-      ).then(() => {
-        this.$refs.table.toggleRowExpansion(row, false)
+      ).then((res) => {
+        if (this.sendType.watermark) {
+          water(res, res, this.sendType.watermark, 'rt', (progress) => {
+            this.plan = progress
+          }).then((res) => {
+            this.loading = false
+          })
+        } else {
+          this.loading = false
+        }
+      }).catch((err) => {
+        console.log(err)
+        this.$message.error('失败:' + err)
         this.loading = false
       })
     },

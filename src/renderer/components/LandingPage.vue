@@ -519,7 +519,7 @@ export default {
                     endTime: item.end_time,
                     desc: this.form.desc,
                     tags: this.form.tags,
-                    path: path.join(this.setting.savePath, this.form.title, item.name, '.mp4'),
+                    path: path.join(this.setting.savePath, this.form.title, item.name + '.mp4'),
                     create_time: Date.parse(new Date())
                   }, path.join(this.setting.savePath, 'videoList'))
                   item.status = 'success'

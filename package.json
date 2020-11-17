@@ -1,13 +1,13 @@
 {
   "name": "video_edit",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "author": "杨兵 <859696354@qq.com>",
   "description": "An electron-vue project",
   "license": "Apache License",
   "main": "./dist/electron/main.js",
   "scripts": {
     "dist": "electron-builder --win --x64",
-    "build": "node .electron-vue/build.js && electron-builder -p always",
+    "build": "node .electron-vue/build.js && electron-builder",
     "build:dir": "node .electron-vue/build.js && electron-builder --dir",
     "build:clean": "cross-env BUILD_TARGET=clean node .electron-vue/build.js",
     "build:web": "cross-env BUILD_TARGET=web node .electron-vue/build.js",
