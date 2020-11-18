@@ -219,7 +219,7 @@ import 'videojs-contrib-hls'
 import 'video.js/dist/video-js.css'
 import '../assets/js/StreamPlayTech.js'
 import {cutVideo, secondToTimeStr, videoSupport} from '../../main/ffmpeg-helper'
-import {nedbFind, nedbSave, nedbUpdate} from '../assets/js/until'
+import {nedbFind, nedbSave, nedbUpdate} from '../assets/js/nedb'
 import VideoServer from '../../main/VideoServer'
 import path from 'path'
 

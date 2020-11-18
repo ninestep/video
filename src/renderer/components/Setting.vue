@@ -113,7 +113,8 @@
 </template>
 
 <script>
-import {nedbCount, nedbFind, nedbRemove, nedbSave, nedbUpdate, readJson} from '../assets/js/until'
+import {readJson} from '../assets/js/until'
+import {nedbCount, nedbFind, nedbRemove, nedbSave, nedbUpdate} from '../assets/js/nedb'
 import path from 'path'
 const ipc = require('electron').ipcRenderer
 export default {

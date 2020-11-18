@@ -64,7 +64,8 @@
 </template>
 
 <script>
-import {getVideoList, nedbCount, nedbFind, nedbRemove, nedbUpdate} from '../assets/js/until'
+import {nedbCount, nedbFind, nedbRemove, nedbUpdate} from '../assets/js/nedb'
+import {getVideoList} from '../assets/js/until'
 
 export default {
   name: 'collect1',

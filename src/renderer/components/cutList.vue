@@ -68,7 +68,7 @@
 </template>
 
 <script>
-import {nedbFind, nedbPage} from '../assets/js/until'
+import {nedbFind, nedbPage} from '../assets/js/nedb'
 import path from 'path'
 import {conactVideo, secondToTimeStr, water} from '../../main/ffmpeg-helper'
 

@@ -96,8 +96,8 @@
 </template>
 
 <script>
-import {getVideoList, nedbCount, nedbRemove, nedbSave} from '../assets/js/until'
-
+import {getVideoList} from '../assets/js/until'
+import {nedbCount, nedbRemove, nedbSave} from '../assets/js/nedb'
 export default {
   name: 'videoList',
   mounted () {
