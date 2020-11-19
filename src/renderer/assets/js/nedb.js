@@ -1,6 +1,7 @@
 const Datastore = require('nedb')
 const path = require('path')
-const dbName = path.join(__dirname, 'videoEdit')
+const os = require('os')
+const dbName = path.join(os.homedir(), '.videoEdit', 'videoEdit')
 let db = new Datastore({ filename: dbName, autoload: true })
 
 export function setNeDb (path = '') {

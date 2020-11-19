@@ -174,7 +174,6 @@ function onVideoFileSeleted (videoFilePath) {
 }
 ipc.on('update', () => {
   autoUpdater.autoDownload = false
-  autoUpdater.checkForUpdates()
   if (process.env.NODE_ENV === 'production') { autoUpdater.checkForUpdates() }
 })
 ipc.on('download-update', () => {

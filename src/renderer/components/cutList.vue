@@ -45,7 +45,13 @@
     >
       <template slot-scope="scope">
         <el-button type="primary" @click="conact(scope.row)">发布</el-button>
-        <el-button type="danger">删除</el-button>
+
+        <el-popconfirm
+            title="确定删除此片段？"
+            @onConfirm="del(scope.row)"
+        >
+          <el-button slot="reference" type="danger" >删除</el-button>
+        </el-popconfirm>
       </template>
     </el-table-column>
   </el-table>
@@ -77,7 +83,7 @@
 </template>
 
 <script>
-import {nedbFind, nedbPage} from '../assets/js/nedb'
+import {nedbFind, nedbPage, nedbRemove} from '../assets/js/nedb'
 import path from 'path'
 import {conactVideo, secondToTimeStr, water} from '../../main/ffmpeg-helper'
 import {xigua} from '../drive/xigua'
@@ -86,7 +92,6 @@ export default {
   name: 'cutList',
   mounted () {
     nedbFind('setting', {}).then(res => {
-      console.log(res)
       if (res.length <= 0 || !res[0]['savePath']) {
         this.$message.error('请先到配置中心设置切片存储路径，否则无法切片')
       } else {
@@ -120,6 +125,12 @@ export default {
   methods: {
     xigua,
     secondToTimeStr,
+    del: function (row) {
+      nedbRemove('videoList', {_id: row._id}, path.join(this.setting.savePath, 'videoList')).then(res => {
+        const index = this.tableList.indexOf(row)
+        this.tableList.splice(index, 1)
+      })
+    },
     format: function (percentage) {
       return percentage.toFixed(2)
     },

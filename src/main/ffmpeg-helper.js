@@ -249,7 +249,9 @@ export function water (videoPath, savePath, watermark = '', location = 'rt', pro
  * @param name 名字
  * @returns {Promise<unknown>}
  */
-export function cutVideo (videoPath, startTime, endTime, outDir, name = null) {
+export function cutVideo (videoPath, startTime, endTime, outDir, name = null, progressFunc = function (progress) {
+  console.log(progress.name + ' Processing: ' + progress.percent + '% done')
+}) {
   return new Promise(function (resolve, reject) {
     new Promise(function (resolve, reject) {
       fs.stat(outDir, function (err, stats) {
@@ -261,12 +263,19 @@ export function cutVideo (videoPath, startTime, endTime, outDir, name = null) {
     }).then(function () {
       ffmpeg().input(videoPath)
         .setStartTime(secondToTimeStr(startTime))
+        // .inputOption(['-t', parseInt(endTime - startTime + '')])
         .setDuration(parseInt(endTime - startTime + ''))
         .output(path.join(outDir, name + '.mp4'))
-        .audioBitrate('128k')
+        // .videoCodec('copy')
+        .audioCodec('copy')
+        // .audioBitrate('128k')
         .videoCodec('libx264')
         .on('start', function (commandLine) {
           console.log('Started: ' + commandLine)
+        })
+        .on('progress', function (progress) {
+          progress.name = '剪切视频'
+          progressFunc(progress)
         })
         .on('end', function (err) {
           if (!err) {

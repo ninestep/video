@@ -1,6 +1,7 @@
 const puppeteer = require('puppeteer')
 const fs = require('fs')
-
+const path = require('path')
+const os = require('os')
 export function xigua (filePath, title = '', message = '', callback = function (event) { console.log(event) }) {
   return new Promise(async (resolve, reject) => {
     let msg = ''
@@ -14,13 +15,13 @@ export function xigua (filePath, title = '', message = '', callback = function (
           height: 1080
         }
       })
-      const cookieName = 'xiGuaCookies'
+      const cookiePath = path.join(os.homedir(), '.videoEdit', 'xiGuaCookies')
       let cookies = []
       let login = false
       msg = '读取COOKIES'
       callback(msg)
       try {
-        cookies = JSON.parse(fs.readFileSync(cookieName))
+        cookies = JSON.parse(fs.readFileSync(cookiePath))
         login = true
       } catch (e) {
         msg = '读取COOKIES失败'
@@ -157,7 +158,7 @@ export function xigua (filePath, title = '', message = '', callback = function (
         msg = '已登陆'
         callback(msg)
         cookies = await page.cookies()
-        fs.writeFileSync(cookieName, JSON.stringify(cookies))
+        fs.writeFileSync(cookiePath, JSON.stringify(cookies))
         page.close()
         browser.close()
         xigua()

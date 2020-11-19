@@ -132,7 +132,12 @@
                         fixed="right"
                         label="操">
                       <template slot-scope="scope">
-                        <el-button @click="del(scope.row)" type="danger" size="mini" circle icon="el-icon-delete"></el-button>
+                        <el-popconfirm
+                            title="确定删除此片段？"
+                            @onConfirm="del(scope.row)"
+                        >
+                          <el-button slot="reference" type="danger" size="mini" circle icon="el-icon-delete"></el-button>
+                        </el-popconfirm>
                       </template>
                     </el-table-column>
                   </el-table>
@@ -410,7 +415,7 @@ export default {
         },
         function () {
           document.onkeydown = (event) => {
-            if (event.code === 'KeyZ') {
+            if (event.code === 'KeyZ' && event.shiftKey) {
               if (_.player) {
                 if (_.player.paused()) {
                   _.player.play()
@@ -420,7 +425,7 @@ export default {
               }
               return false
             }
-            if (event.code === 'KeyC') {
+            if (event.code === 'KeyC' && event.shiftKey) {
               const time = _.player.currentTime()
               const time1 = _.player.currentTime()
               if (_.list_form.start_time === 0) {
@@ -537,8 +542,8 @@ export default {
       this.ipc.send('open-dir-dialog')
     },
     del: function (item) {
-      const index = this.tableData.indexOf(item)
-      this.tableData.splice(index, 1)
+      const index = this.cutData.indexOf(item)
+      this.cutData.splice(index, 1)
     }
   }
 }
