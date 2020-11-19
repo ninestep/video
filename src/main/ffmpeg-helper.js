@@ -193,7 +193,7 @@ export function water (videoPath, savePath, watermark = '', location = 'rt', pro
             console.log('文字水印添加错误: ' + err.message)
           }).on('end', function () {
             console.log('文字水印添加成功')
-            resolve()
+            resolve(savePath)
           }).save(savePath)
       } else {
         if (location === 'rt') {
@@ -420,7 +420,8 @@ export function conactVideo (videoPath, savePath, frontPath = '', endPath = '', 
               resolve()
             }).save(saveVideo)
         })
-      }).then(() => {
+      })
+      .then(() => {
         resolve(saveVideo)
       }).catch(error => {
         reject(error)

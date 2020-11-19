@@ -137,6 +137,10 @@ export default {
           {
             type: 'douyin',
             name: '抖音'
+          },
+          {
+            type: 'xigua',
+            name: '西瓜'
           }
         ]
       },
@@ -159,6 +163,11 @@ export default {
             {
               type: 'douyin',
               name: '抖音'
+            },
+
+            {
+              type: 'xigua',
+              name: '西瓜'
             }
           ]
         }

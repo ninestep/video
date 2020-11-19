@@ -28,7 +28,7 @@
               v-for="(item,index) in setting.release"
               :key="index"
               :label="item.name"
-              :value="{front:item.front,end:item.end,watermark:item.watermark,name:item.name,savePath:item.savePath}">
+              :value="{front:item.front,end:item.end,watermark:item.watermark,name:item.name,savePath:item.savePath,type:item.type}">
           </el-option>
         </el-select>
       </template>
@@ -56,13 +56,22 @@
       :total="pageInfo.last_page">
   </el-pagination>
   <el-dialog
-      title="提示"
+      title="进度"
       :visible="loading"
       width="30%">
-        <el-row :gutter="10">
-          <el-col :span="20"><el-progress :percentage="plan.percent" :format="format"/></el-col>
-          <el-col :span="4">{{plan.name}}</el-col>
-        </el-row>
+    <el-steps :space="200" :active="step" finish-status="success" simple>
+      <el-step title="处理视频">
+      </el-step>
+      <el-step title="视频上传">
+      </el-step>
+    </el-steps>
+
+    <el-row :gutter="10" v-if="step===1">
+      <el-col :span="20"><el-progress :percentage="plan.percent" :format="format"/></el-col>
+      <el-col :span="4">{{plan.name}}</el-col>
+    </el-row>
+
+    <p v-if="step===2" v-for="log of logs">{{log}}</p>
   </el-dialog>
 </div>
 </template>
@@ -71,6 +80,7 @@
 import {nedbFind, nedbPage} from '../assets/js/nedb'
 import path from 'path'
 import {conactVideo, secondToTimeStr, water} from '../../main/ffmpeg-helper'
+import {xigua} from '../drive/xigua'
 
 export default {
   name: 'cutList',
@@ -97,7 +107,9 @@ export default {
       loading: false,
       tableList: [],
       setting: {},
+      step: 1,
       plan: {},
+      logs: [],
       query: {
         type: 0,
         word: '',
@@ -106,6 +118,7 @@ export default {
     }
   },
   methods: {
+    xigua,
     secondToTimeStr,
     format: function (percentage) {
       return percentage.toFixed(2)
@@ -119,18 +132,37 @@ export default {
           this.plan = progress
         }
       ).then((res) => {
-        if (this.sendType.watermark) {
-          water(res, res, this.sendType.watermark, 'rt', (progress) => {
-            this.plan = progress
-          }).then((res) => {
-            this.loading = false
-          })
-        } else {
-          this.loading = false
-        }
+        return new Promise((resolve, reject) => {
+          if (this.sendType.watermark) {
+            water(res, res, this.sendType.watermark, 'rt', (progress) => {
+              this.plan = progress
+            }).then((res) => {
+              resolve(res)
+            }).catch(error => {
+              reject(error)
+            })
+          } else {
+            resolve(res)
+          }
+        })
+      }).then((res) => {
+        return new Promise((resolve, reject) => {
+          this.step = 2
+          switch (this.sendType.type) {
+            case 'xigua':xigua(res, `${row.title}~${row.name}`, row.desc, (event) => {
+              this.logs.push(event)
+            }).then(() => {
+              resolve()
+            }).catch((err) => {
+              reject(err)
+            })
+          }
+        })
       }).catch((err) => {
         console.log(err)
         this.$message.error('失败:' + err)
+        this.loading = false
+      }).finally(() => {
         this.loading = false
       })
     },
