@@ -20,7 +20,7 @@
       <el-main class="main" ref="main" style="padding: 0">
         <router-view></router-view>
       </el-main>
-      <el-footer>
+      <el-footer v-if="close===false">
         <el-progress class="update_progress" :text-inside="true" :stroke-width="26" :percentage="percent"
                      v-if="close===false"></el-progress>
       </el-footer>
