@@ -264,7 +264,7 @@ export function cutVideo (videoPath, startTime, endTime, outDir, name = null, pr
     }).then(function () {
       ffmpeg().input(videoPath)
         .setStartTime(secondToTimeStr(startTime))
-        .inputOption(['-t', secondToTimeStr(endTime)])
+        .inputOption(['-to', secondToTimeStr(endTime)])
         .outputOption(['-c:v', 'libx264', '-c:a', 'aac'])
         .output(path.join(outDir, name + '.mp4'))
         .on('start', function (commandLine) {
