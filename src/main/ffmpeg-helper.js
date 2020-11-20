@@ -247,6 +247,7 @@ export function water (videoPath, savePath, watermark = '', location = 'rt', pro
  * @param endTime 结束时间
  * @param outDir 输出文件
  * @param name 名字
+ * @param progressFunc
  * @returns {Promise<unknown>}
  */
 export function cutVideo (videoPath, startTime, endTime, outDir, name = null, progressFunc = function (progress) {
@@ -263,13 +264,9 @@ export function cutVideo (videoPath, startTime, endTime, outDir, name = null, pr
     }).then(function () {
       ffmpeg().input(videoPath)
         .setStartTime(secondToTimeStr(startTime))
-        // .inputOption(['-t', parseInt(endTime - startTime + '')])
-        .setDuration(parseInt(endTime - startTime + ''))
+        .inputOption(['-t', secondToTimeStr(endTime)])
+        .outputOption(['-c:v', 'libx264', '-c:a', 'aac'])
         .output(path.join(outDir, name + '.mp4'))
-        // .videoCodec('copy')
-        .audioCodec('copy')
-        // .audioBitrate('128k')
-        .videoCodec('libx264')
         .on('start', function (commandLine) {
           console.log('Started: ' + commandLine)
         })
