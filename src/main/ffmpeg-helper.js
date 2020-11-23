@@ -262,10 +262,11 @@ export function cutVideo (videoPath, startTime, endTime, outDir, name = null, pr
       })
       resolve()
     }).then(function () {
+      let startTimeStr = secondToTimeStr(startTime)
+      let endTimeStr = secondToTimeStr(endTime)
       ffmpeg().input(videoPath)
-        .setStartTime(secondToTimeStr(startTime))
-        .inputOption(['-to', secondToTimeStr(endTime)])
-        .outputOption(['-c:v', 'libx264', '-c:a', 'aac'])
+        .setStartTime(startTimeStr)
+        .outputOption(['-ss', startTimeStr, '-to', endTimeStr, '-c:v', 'libx264', '-c:a', 'aac', '-avoid_negative_ts', 1])
         .output(path.join(outDir, name + '.mp4'))
         .on('start', function (commandLine) {
           console.log('Started: ' + commandLine)
@@ -346,7 +347,7 @@ export function conactVideo (videoPath, savePath, frontPath = '', endPath = '', 
         videoCodec = res['videoCodec']
         audioCodec = res['audioCodec']
         bitRate = res['bitRate']
-        frames += res['frames']
+        frames = res['frames']
       })
       .then(() => {
         return new Promise((resolve) => {
@@ -405,7 +406,17 @@ export function conactVideo (videoPath, savePath, frontPath = '', endPath = '', 
         })
       })
       .then(() => {
-        return new Promise((resolve) => {
+        return new Promise(async (resolve) => {
+          let metaData = await getMetaData(videoPath)
+          frames = metaData['frames']
+          if (frontPath) {
+            metaData = await getMetaData(frontPath)
+            frames += metaData['frames']
+          }
+          if (endPath) {
+            metaData = await getMetaData(endPath)
+            frames += metaData['frames']
+          }
           ffmpeg(path.join(__dirname, 'input.txt'))
             .inputOptions(
               '-f', 'concat',
