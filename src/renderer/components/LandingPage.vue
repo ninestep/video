@@ -1,6 +1,6 @@
 <template>
-  <div id="wrapper" >
-    <el-row type="flex" justify="center" >
+  <div id="wrapper">
+    <el-row type="flex" justify="center">
       <el-col :span="18">
         <div class="video">
           <video
@@ -19,15 +19,16 @@
             <el-tabs type="border-card">
               <el-tab-pane label="源解析">
                 <el-form ref="form" :model="form">
-                      <el-form-item label="网址">
-                        <el-input v-model="form.source" placeholder="请输入网址">
-                          <el-button :loading="sourceLoading!==0" slot="append" icon="el-icon-search" type="primary" @click="search"></el-button>
-                        </el-input>
-                      </el-form-item>
+                  <el-form-item label="网址">
+                    <el-input v-model="form.source" placeholder="请输入网址">
+                      <el-button :loading="sourceLoading!==0" slot="append" icon="el-icon-search" type="primary"
+                                 @click="search"></el-button>
+                    </el-input>
+                  </el-form-item>
                 </el-form>
                 <el-alert v-if="form.name"
-                    :title="`正在播放《${form.name}》`"
-                    type="success">
+                          :title="`正在播放《${form.name}》`"
+                          type="success">
                 </el-alert>
                 <el-tabs type="border-card">
                   <el-tab-pane label="解析">
@@ -44,7 +45,8 @@
                           label="状态">
                         <template slot-scope="scope">
                           <i v-if="scope.row.status === 'loading'" class="el-icon-loading" style="color: #E6A23C"></i>
-                          <i v-else-if="scope.row.status === 'success'" class="el-icon-success" style="color: #67C23A"></i>
+                          <i v-else-if="scope.row.status === 'success'" class="el-icon-success"
+                             style="color: #67C23A"></i>
                           <i v-else-if="scope.row.status === 'fail'" class="el-icon-error" style="color: #F56C6C"></i>
                           <i v-else class="el-icon-time" style="color: #409EFF"></i>
                         </template>
@@ -57,12 +59,13 @@
                               v-if="scope.row.status==='success'"
                               :disabled="scope.row.m3u8===source"
                               @click="play(scope.row)"
-                              type="text" size="small">播放</el-button>
+                              type="text" size="small">播放
+                          </el-button>
                         </template>
                       </el-table-column>
                     </el-table>
                   </el-tab-pane>
-                  <el-tab-pane label="剧集"  v-if="detail.length>0">
+                  <el-tab-pane label="剧集" v-if="detail.length>0">
                     <el-table
                         :data="detail"
                         style="width: 100%">
@@ -78,7 +81,9 @@
                           fixed="right"
                           label="操作">
                         <template slot-scope="scope">
-                          <el-button type="text" :disabled="form.source===scope.row.url||sourceLoading>0" size="small" @click="dlPlay(scope.row)">播放</el-button>
+                          <el-button type="text" :disabled="form.source===scope.row.url||sourceLoading>0" size="small"
+                                     @click="dlPlay(scope.row)">播放
+                          </el-button>
                         </template>
                       </el-table-column>
                     </el-table>
@@ -97,7 +102,7 @@
                     <el-col :span="8">持续时间</el-col>
                     <el-col :span="8">{{ start_time }}</el-col>
                     <el-col :span="8">{{ list_form.end_time }}</el-col>
-                    <el-col :span="8">{{current_time}}</el-col>
+                    <el-col :span="8">{{ current_time }}</el-col>
                   </el-row>
                 </el-card>
                 <el-card class="box-card" style="padding: 0;margin-top: 20px">
@@ -136,7 +141,8 @@
                             title="确定删除此片段？"
                             @onConfirm="del(scope.row)"
                         >
-                          <el-button slot="reference" type="danger" size="mini" circle icon="el-icon-delete"></el-button>
+                          <el-button slot="reference" type="danger" size="mini" circle
+                                     icon="el-icon-delete"></el-button>
                         </el-popconfirm>
                       </template>
                     </el-table-column>
@@ -149,7 +155,7 @@
                   <el-form ref="cut_form" :model="form" :rules="{
                     title:[{ required: true, message: '请输入视频标题', trigger: 'blur' }],
                     desc:[{ required: true, message: '请输入视频简介', trigger: 'blur' }]
-                  }" >
+                  }">
                     <el-form-item label="标题" prop="title">
                       <el-input v-model="form.title" placeholder="请输入视频标题">
                       </el-input>
@@ -157,8 +163,8 @@
                     <el-form-item label="简介" prop="desc">
                       <el-input
                           v-model="form.desc"
-                                type="textarea"
-                                :rows="2"
+                          type="textarea"
+                          :rows="2"
                           placeholder="请输入视频简介">
                       </el-input>
                     </el-form-item>
@@ -203,7 +209,8 @@
                         fixed="right"
                         label="操">
                       <template slot-scope="scope">
-                        <el-button @click="del(scope.row)" type="danger" size="mini" circle icon="el-icon-delete"></el-button>
+                        <el-button @click="del(scope.row)" type="danger" size="mini" circle
+                                   icon="el-icon-delete"></el-button>
                       </template>
                     </el-table-column>
                   </el-table>
@@ -227,8 +234,9 @@ import {cutVideo, secondToTimeStr, videoSupport} from '../../main/ffmpeg-helper'
 import {nedbFind, nedbSave, nedbUpdate} from '../assets/js/nedb'
 import VideoServer from '../../main/VideoServer'
 import path from 'path'
-
+import fs from 'fs'
 import {ipcRenderer} from 'electron'
+import {downLoad} from '../assets/js/until'
 // import {readJson} from '../assets/js/until'
 export default {
   name: 'landing-page',
@@ -436,7 +444,7 @@ export default {
                 _.$prompt('请输入名字', '提示', {
                   confirmButtonText: '确定',
                   cancelButtonText: '取消'
-                }).then(({ value }) => {
+                }).then(({value}) => {
                   _.cutData.push({
                     start_time: startTime,
                     end_time: time,
@@ -486,7 +494,7 @@ export default {
                   if (!_.httpServer) {
                     _.httpServer = new VideoServer()
                   }
-                  _.httpServer.videoSourceInfo = { videoSourcePath: _.source, checkResult: checkResult }
+                  _.httpServer.videoSourceInfo = {videoSourcePath: _.source, checkResult: checkResult}
                   _.httpServer.createServer()
                   console.log('createVideoServer success')
                   let playParams = {}
@@ -502,8 +510,8 @@ export default {
       )
     },
     getWindowSize: function () {
-      const { offsetWidth, offsetHeight } = document.documentElement
-      const { innerHeight } = window // innerHeight will be blank in Windows system
+      const {offsetWidth, offsetHeight} = document.documentElement
+      const {innerHeight} = window // innerHeight will be blank in Windows system
       return [
         offsetWidth,
         innerHeight > offsetHeight ? offsetHeight : innerHeight
@@ -512,12 +520,13 @@ export default {
     cut: function () {
       this.$refs['cut_form'].validate((valid) => {
         if (valid) {
-          this.cutData.forEach((item) => {
-            if (item.status === 'wait') {
-              item.status = 'loading'
-              cutVideo(this.source, item.start_time, item.end_time, path.join(this.setting.savePath, this.form.title), item.name)
-                .then(res => {
-                  nedbSave('videoList', {
+          downLoad(this.source, this.form.title).then((savePath) => {
+            return new Promise(async (resolve, reject) => {
+              for (const item of this.cutData) {
+                if (item.status === 'wait') {
+                  item.status = 'loading'
+                  await cutVideo(savePath, item.start_time, item.end_time, path.join(this.setting.savePath, this.form.title), item.name)
+                  await nedbSave('videoList', {
                     title: this.form.title,
                     name: item.name,
                     startTime: item.start_time,
@@ -528,19 +537,24 @@ export default {
                     create_time: Date.parse(new Date())
                   }, path.join(this.setting.savePath, 'videoList'))
                   item.status = 'success'
-                }).catch((e) => {
-                  item.status = 'fail'
-                })
-            }
+                }
+              }
+              resolve(savePath)
+            })
+          }
+          ).finally(res => {
+            fs.unlinkSync(res)
           })
         } else {
           return false
         }
-      })
+      }
+      )
     },
     chooseDir: function () {
       this.ipc.send('open-dir-dialog')
     },
+
     del: function (item) {
       const index = this.cutData.indexOf(item)
       this.cutData.splice(index, 1)
@@ -550,13 +564,16 @@ export default {
 </script>
 
 <style>
-  @import url('https://fonts.googleapis.com/css?family=Source+Sans+Pro');
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
+@import url('https://fonts.googleapis.com/css?family=Source+Sans+Pro');
 
-  body { font-family: 'Source Sans Pro', sans-serif; }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Source Sans Pro', sans-serif;
+}
 
 </style>
