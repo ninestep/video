@@ -150,7 +150,6 @@
                 </el-card>
               </el-tab-pane>
               <el-tab-pane label="输出">
-
                 <el-card class="box-card" style="padding: 0;margin-top: 20px">
                   <el-form ref="cut_form" :model="form" :rules="{
                     title:[{ required: true, message: '请输入视频标题', trigger: 'blur' }],
@@ -179,9 +178,10 @@
                 <el-card class="box-card" style="padding: 0;margin-top: 20px">
                   <div slot="header" class="clearfix">
                     <span>截断片段</span>
-                    <el-button style="float: right; padding: 3px 0" type="text" @click="cut">切割</el-button>
+                    <el-button style="float: right; padding: 3px 0" type="text" :disabled="cutting" @click="cut">切割</el-button>
                   </div>
                   <el-table
+                      :loading="cutting"
                       :data="cutData"
                       style="width: 100%">
                     <el-table-column
@@ -215,7 +215,14 @@
                     </el-table-column>
                   </el-table>
                 </el-card>
-
+                <el-input
+                    type="textarea"
+                    id="scroll_text"
+                    :rows="10"
+                    :disabled = true
+                    placeholder="处理日志"
+                    v-model="cut_log_text">
+                </el-input>
               </el-tab-pane>
             </el-tabs>
           </div>
@@ -230,13 +237,11 @@ import videojs from 'video.js'
 import 'videojs-contrib-hls'
 import 'video.js/dist/video-js.css'
 import '../assets/js/StreamPlayTech.js'
-import {cutVideo, secondToTimeStr, videoSupport} from '../../main/ffmpeg-helper'
+import {cutVideo, m3u8ToMp4, secondToTimeStr, videoSupport} from '../../main/ffmpeg-helper'
 import {nedbFind, nedbSave, nedbUpdate} from '../assets/js/nedb'
 import VideoServer from '../../main/VideoServer'
-import path from 'path'
-import fs from 'fs'
 import {ipcRenderer} from 'electron'
-import {downLoad} from '../assets/js/until'
+import path from 'path'
 // import {readJson} from '../assets/js/until'
 export default {
   name: 'landing-page',
@@ -280,12 +285,17 @@ export default {
         'miguvideo.com',
         'fun.tv',
         'youku.com'
-      ]
+      ],
+      cutting: false,
+      cutLog: []
     }
   },
   computed: {
     start_time: function () {
       return secondToTimeStr(this.list_form.start_time)
+    },
+    cut_log_text: function () {
+      return this.cutLog.join('\n')
     }
   },
   destroyed () {
@@ -517,34 +527,76 @@ export default {
         innerHeight > offsetHeight ? offsetHeight : innerHeight
       ]
     },
+    addCutLog: function (msg) {
+      this.cutLog.push(msg)
+      this.$nextTick(() => {
+        setTimeout(() => {
+          const textarea = document.getElementById('scroll_text')
+          textarea.scrollTop = textarea.scrollHeight
+        }, 13)
+      })
+    },
     cut: function () {
       this.$refs['cut_form'].validate((valid) => {
         if (valid) {
-          downLoad(this.source, this.form.title).then((savePath) => {
-            return new Promise(async (resolve, reject) => {
-              for (const item of this.cutData) {
-                if (item.status === 'wait') {
-                  item.status = 'loading'
-                  await cutVideo(savePath, item.start_time, item.end_time, path.join(this.setting.savePath, this.form.title), item.name)
-                  await nedbSave('videoList', {
-                    title: this.form.title,
-                    name: item.name,
-                    startTime: item.start_time,
-                    endTime: item.end_time,
-                    desc: this.form.desc,
-                    tags: this.form.tags,
-                    path: path.join(this.setting.savePath, this.form.title, item.name + '.mp4'),
-                    create_time: Date.parse(new Date())
-                  }, path.join(this.setting.savePath, 'videoList'))
-                  item.status = 'success'
-                }
-              }
-              resolve(savePath)
-            })
-          }
-          ).finally(res => {
-            fs.unlinkSync(res)
+          this.cutting = true
+          this.cutLog.push('开始下载文件')
+          this.ipc.on('download-file-progress', (event, args) => {
+            this.addCutLog('正在下载文件，进度' + args)
           })
+          this.ipc.once('download-file-error', (event, args) => {
+            this.addCutLog('视频下载失败，失败原因:' + args)
+            this.ipc.removeAllListeners('download-file-progress')
+            this.ipc.removeAllListeners('download-file-done')
+            this.ipc.removeAllListeners('download-file-error')
+          })
+          this.ipc.once('download-file-done', async (event, args) => {
+            this.addCutLog('视频下载成功，文件存储路径:' + args)
+            this.ipc.removeAllListeners('download-file-progress')
+            this.ipc.removeAllListeners('download-file-done')
+            this.ipc.removeAllListeners('download-file-error')
+            const { createReadStream } = require('fs')
+            const readline = require('readline')
+            const stream = createReadStream(args, 'utf-8')
+
+            // 创建一个 readline 接口
+            // 注意 crlfDelay 参数，让它支持多种换行符(CR LF ('\r\n'))
+            const rl = readline.createInterface({
+              input: stream,
+              crlfDelay: Infinity
+            })
+            for await (const line of rl) {
+              // input.txt 中的每一行在这里将会被连续地用作 `line`。
+              if (line.indexOf('#EXTM3U') === 0) {
+                args = await m3u8ToMp4(this.source, args + '.mp4', (progress) => {
+                  this.addCutLog(`正在${progress.name},进度${progress.percent}`)
+                })
+              }
+              break
+            }
+            rl.close()
+            stream.destroy()
+            for (let item of this.cutData) {
+              if (item.status === 'wait') {
+                item.status = 'loading'
+                await cutVideo(args, item.start_time, item.end_time, path.join(this.setting.savePath, this.form.title), item.name, (progress) => {
+                  this.addCutLog(`正在${progress.name} ,进度 ${progress.percent}%`)
+                })
+                await nedbSave('videoList', {
+                  title: this.form.title,
+                  name: item.name,
+                  startTime: item.start_time,
+                  endTime: item.end_time,
+                  desc: this.form.desc,
+                  tags: this.form.tags,
+                  path: path.join(this.setting.savePath, this.form.title, item.name + '.mp4'),
+                  create_time: Date.parse(new Date())
+                }, path.join(this.setting.savePath, 'videoList'))
+                item.status = 'success'
+              }
+            }
+          })
+          this.ipc.send('download-file', {url: this.source})
         } else {
           return false
         }
@@ -554,7 +606,6 @@ export default {
     chooseDir: function () {
       this.ipc.send('open-dir-dialog')
     },
-
     del: function (item) {
       const index = this.cutData.indexOf(item)
       this.cutData.splice(index, 1)

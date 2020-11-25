@@ -4,7 +4,8 @@ import {app, BrowserWindow} from 'electron'
 
 import VideoServer from './VideoServer'
 import {videoSupport} from './ffmpeg-helper'
-
+import path from 'path'
+import fs from 'fs'
 /**
  * Auto Updater
  *
@@ -180,6 +181,52 @@ ipc.on('download-update', () => {
   autoUpdater.downloadUpdate()
 })
 function sendUpdate (args) {
-  console.log(args)
   mainWindow.webContents.send('update', args)
 }
+ipc.on('download-file', (event, args) => {
+  mainWindow.webContents.downloadURL(args.url)
+  mainWindow.webContents.session.on('will-download', (e, item) => {
+    // 获取文件的总大小
+    const totalBytes = item.getTotalBytes()
+
+    // 设置文件的保存路径，此时默认弹出的 save dialog 将被覆盖
+    let filePath = path.join(app.getPath('downloads'), item.getFilename())
+    if (args.savePath) {
+      filePath = args.savePath
+    }
+    try {
+      let stats = fs.statSync(filePath)// 如果文件已存在读取文件信息
+      if (totalBytes === stats.size) { // 如果文件已经存在并且已经下载按成则跳过该文件
+        item.cancel()
+        mainWindow.webContents.send('download-file-done', filePath)
+      }
+    } catch (err) {
+
+    }
+    item.setSavePath(filePath)
+
+    // 监听下载过程，计算并设置进度条进度
+    item.on('updated', () => {
+      mainWindow.setProgressBar(item.getReceivedBytes() / totalBytes)
+      mainWindow.webContents.send('download-file-progress', (item.getReceivedBytes() / totalBytes * 100) + '%')
+    })
+
+    // 监听下载结束事件
+    item.on('done', (e, state) => {
+      // 如果窗口还在的话，去掉进度条
+      if (!mainWindow.isDestroyed()) {
+        mainWindow.setProgressBar(-1)
+      }
+
+      // 下载被取消或中断了
+      if (state === 'interrupted') {
+        mainWindow.webContents.send('download-file-error', `文件 ${item.getFilename()} 因为某些原因被中断下载`)
+      }
+
+      // 下载完成，让 dock 上的下载目录Q弹一下下
+      if (state === 'completed') {
+        mainWindow.webContents.send('download-file-done', filePath)
+      }
+    })
+  })
+})

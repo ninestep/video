@@ -184,37 +184,3 @@ export function getVideoType (url) {
     })
   })
 }
-
-export function downLoad (url, path) {
-  const writer = fs.createWriteStream(path)
-  return new Promise((resolve, reject) => {
-    axios({
-      url,
-      method: 'GET',
-      responseType: 'stream'
-    }).then(response => {
-      response.data.pipe(writer)
-      const totalSize = response.headers['content-length']
-      var downloaded = 0
-      response.data.on('data', (data) => {
-        if (data.indexOf('#EXTM3U') === 0) {
-          writer.close()
-          resolve(url)
-        }
-        downloaded += Buffer.byteLength(data)
-        // console.log('downloadProgress', { total: totalSize, loaded: downloaded })
-        console.log('downloadProgress', (parseInt(downloaded) / parseInt(totalSize) * 100) + '%')
-      })
-      response.data.on('end', () => {
-        console.log('downloadEnd')
-      })
-      response.data.on('error', (error) => {
-        console.log('downloadError', error)
-      })
-    }).catch(err => {
-      console.error(err)
-    })
-    writer.on('finish', resolve)
-    writer.on('error', reject)
-  })
-}

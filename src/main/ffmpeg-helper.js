@@ -1,4 +1,5 @@
 'use strict'
+
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path
 const ffprobePath = require('@ffprobe-installer/ffprobe').path
 const ffmpeg = require('fluent-ffmpeg')
@@ -262,11 +263,18 @@ export function cutVideo (videoPath, startTime, endTime, outDir, name = null, pr
       })
       resolve()
     }).then(function () {
+      let firstStartTimeStr = secondToTimeStr(0)
       let startTimeStr = secondToTimeStr(startTime)
       let endTimeStr = secondToTimeStr(endTime)
+      if (startTime >= 10) {
+        firstStartTimeStr = secondToTimeStr(startTime - 10)
+        startTimeStr = secondToTimeStr(10)
+        endTimeStr = secondToTimeStr(endTime - startTime - 10)
+      }
       ffmpeg().input(videoPath)
-        .setStartTime(startTimeStr)
+        .setStartTime(firstStartTimeStr)
         .outputOption(['-ss', startTimeStr, '-to', endTimeStr, '-c:v', 'libx264', '-c:a', 'aac', '-avoid_negative_ts', 1])
+        .format('mp4')
         .output(path.join(outDir, name + '.mp4'))
         .on('start', function (commandLine) {
           console.log('Started: ' + commandLine)
@@ -292,7 +300,41 @@ export function cutVideo (videoPath, startTime, endTime, outDir, name = null, pr
     })
   })
 }
-
+export function m3u8ToMp4 (url, filePath, progressFunc = function (progress) {
+  console.log(progress.name + ' Processing: ' + progress.percent + '% done')
+}) {
+  return new Promise((resolve, reject) => {
+    // 设置文件的保存路径，此时默认弹出的 save dialog 将被覆盖
+    try {
+      let stats = fs.statSync(filePath)// 如果文件已存在读取文件信息
+      if (stats.size > 100) { // 如果文件已经存在并且已经下载按成则跳过该文件
+        resolve(filePath)
+      }
+    } catch (err) {
+    }
+    ffmpeg(url)
+      .format('mp4')
+      .output(filePath)
+      .videoCodec('copy')
+      .audioCodec('copy')
+      .on('start', function (commandLine) {
+        console.log('Started: ' + commandLine)
+      })
+      .on('progress', function (progress) {
+        progress.name = 'm3u8转mp4'
+        progressFunc(progress)
+      })
+      .on('error', function (err) {
+        console.log('m3u8转mp4发生错误: ' + err.message)
+        reject(err)
+      })
+      .on('end', function () {
+        console.log('m3u8转mp4成功')
+        resolve(filePath)
+      })
+      .run()
+  })
+}
 /**
  * 获取视频信息
  * @param videoPath 视频路径
