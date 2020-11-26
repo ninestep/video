@@ -183,8 +183,12 @@ export default {
         .then(() => {
           this.loading = false
         }).catch((err) => {
-          console.log(err)
-          this.$message.error('失败:' + err)
+          this.$message({
+            message: '失败:' + err,
+            duration: 0,
+            showClose: true,
+            type: 'error'
+          })
           this.loading = false
         }).finally(() => {
           this.loading = false

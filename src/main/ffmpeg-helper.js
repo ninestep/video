@@ -496,6 +496,7 @@ export function conactVideo (videoPath, savePath, frontPath = '', endPath = '', 
             })
             .on('error', function (err) {
               console.log('合并视频发生错误: ' + err.message)
+              reject(new Error('合并视频发生错误: ' + err.message))
             }).on('end', function () {
               console.log('合并视频成功')
               resolve()
