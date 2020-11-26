@@ -51,7 +51,30 @@ export function secondToTimeStr (second) {
   }
   return pad(hour) + ':' + pad(minute) + ':' + pad(parseInt(second))
 }
+export function timeStrToSecond (e) {
+  let time = e
+  let len = time.split(':')
+  if (len.length === 3) {
+    let hour = time.split(':')[0]
+    let min = time.split(':')[1]
+    let sec = time.split(':')[2]
+    return Number(hour * 3600) + Number(min * 60) + Number(sec)
+  }
+  if (len.length === 2) {
+    let min = time.split(':')[0]
+    let sec = time.split(':')[1]
+    return Number(min * 60) + Number(sec)
+  }
+  if (len.length === 1) {
+    let sec = time.split(':')[0]
+    return Number(sec)
+  }
 
+  // var hour = time.split(':')[0];
+  // var min = time.split(':')[1];
+  // var sec = time.split(':')[2];
+  // return  Number(hour*3600) + Number(min*60) + Number(sec);
+}
 export function videoSupport (videoPath) {
   let p = new Promise(function (resolve, reject) {
     // eslint-disable-next-line handle-callback-err
@@ -165,7 +188,7 @@ export function water (videoPath, savePath, watermark = '', location = 'rt', pro
       unLink = true
     }
     let locationXY = [10, 10]
-    fs.access(watermark, (err) => {
+    fs.access(watermark, async (err) => {
       if (err) {
         if (location === 'rt') {
           locationXY = ['(w-text_w)-10', 10]
@@ -198,24 +221,25 @@ export function water (videoPath, savePath, watermark = '', location = 'rt', pro
           }).save(savePath)
       } else {
         if (location === 'rt') {
-          locationXY = ['main_w-overlay_w-10', 10]
+          locationXY = ['main_w-overlay_w', 0]
         }
         if (location === 'lt') {
-          locationXY = [10, 10]
+          locationXY = [0, 0]
         }
         if (location === 'rb') {
-          locationXY = ['main_w-overlay_w-10', 'main_h-overlay_h-10']
+          locationXY = ['main_w-overlay_w', 'main_h-overlay_h']
         }
         if (location === 'lb') {
-          locationXY = [10, 'main_h-overlay_h-10']
+          locationXY = [0, 'main_h-overlay_h']
         }
         if (location === 'c') {
           locationXY = ['main_w/2-overlay_w/2', 'main_h/2-overlay_h/2']
         }
+        let videoInfo = await getMetaData(videoPath)
         ffmpeg(videoPath)
           .input(watermark)
           .inputOptions(
-            '-filter_complex', `overlay=${locationXY[0]}:${locationXY[1]}`
+            '-filter_complex', `[1:v]scale=${videoInfo.height * 0.1}*a:${videoInfo.height * 0.1}[ovrl],[0:v][ovrl]overlay=${locationXY[0]}:${locationXY[1]}`
           )
           .on('start', function (commandLine) {
             console.log('Started: ' + commandLine)
@@ -269,7 +293,7 @@ export function cutVideo (videoPath, startTime, endTime, outDir, name = null, pr
       if (startTime >= 10) {
         firstStartTimeStr = secondToTimeStr(startTime - 10)
         startTimeStr = secondToTimeStr(10)
-        endTimeStr = secondToTimeStr(endTime - startTime - 10)
+        endTimeStr = secondToTimeStr(endTime - startTime)
       }
       ffmpeg().input(videoPath)
         .setStartTime(firstStartTimeStr)
@@ -347,11 +371,11 @@ export function getMetaData (videoPath) {
         if (err) {
           reject(err)
         } else {
-          console.log(metadata)
           resolve({
             frames: metadata.streams[0]['nb_frames'],
             height: metadata.streams[0]['height'],
             width: metadata.streams[0]['width'],
+            duration: metadata.streams[0]['duration'],
             bitRate: metadata.streams[0]['bit_rate'],
             videoCodec: metadata.streams[0]['codec_name'],
             audioCodec: metadata.streams[1]['codec_name']
@@ -376,7 +400,16 @@ export function conactVideo (videoPath, savePath, frontPath = '', endPath = '', 
   return new Promise((resolve, reject) => {
     let saveName = path.basename(videoPath)
     let saveVideo = path.join(savePath, saveName)
-    let frames = 1
+    if (!frontPath && !endPath) {
+      fs.copyFile(videoPath, saveVideo, function (err) {
+        if (err) {
+          reject(err)
+        } else {
+          resolve(saveVideo)
+        }
+      })
+    }
+    let duration = 0
     let height = 1080
     let width = 1920
     let videoCodec = 'libx264'
@@ -389,7 +422,6 @@ export function conactVideo (videoPath, savePath, frontPath = '', endPath = '', 
         videoCodec = res['videoCodec']
         audioCodec = res['audioCodec']
         bitRate = res['bitRate']
-        frames = res['frames']
       })
       .then(() => {
         return new Promise((resolve) => {
@@ -397,7 +429,6 @@ export function conactVideo (videoPath, savePath, frontPath = '', endPath = '', 
             trans(frontPath, path.join(__dirname, 'frontPath.mp4'), `${width}x${height}`, videoCodec, audioCodec, 60, bitRate, progressFunc)
               .then((res) => {
                 frontPath = path.join(__dirname, 'frontPath.mp4')
-                frames += res['frames']
                 resolve()
               })
               .catch(err => {
@@ -414,7 +445,6 @@ export function conactVideo (videoPath, savePath, frontPath = '', endPath = '', 
             trans(endPath, path.join(__dirname, 'endPath.mp4'), `${width}x${height}`, videoCodec, audioCodec, 60, bitRate, progressFunc)
               .then((res) => {
                 endPath = path.join(__dirname, 'endPath.mp4')
-                frames += res['frames']
                 resolve()
               }).catch(err => {
                 reject(err)
@@ -425,51 +455,43 @@ export function conactVideo (videoPath, savePath, frontPath = '', endPath = '', 
         })
       })
       .then(() => {
-        return new Promise((resolve) => {
-          var out = fs.createWriteStream(path.join(__dirname, 'input.txt'), 'utf8')
-          let fileContent = ''
-          if (frontPath !== '') {
-            fileContent = `file '${frontPath}'`
-          }
-          if (fileContent === '') {
-            fileContent = `file '${videoPath}'`
-          } else {
-            fileContent += `\nfile '${videoPath}'`
-          }
-          if (endPath !== '') {
-            fileContent += `\nfile '${endPath}'`
-          }
-          out.write(fileContent)
-          out.end()
-          out.on('ready', function () {
-            console.log('创建文本成功')
-            resolve()
-          })
-        })
-      })
-      .then(() => {
         return new Promise(async (resolve) => {
           let metaData = await getMetaData(videoPath)
-          frames = metaData['frames']
+          duration = metaData['duration']
+          console.log(`duration:${duration}`)
+          let query = ffmpeg(videoPath)
+          let outputOption = [
+            '-acodec',
+            'aac',
+            '-vcodec',
+            'libx264',
+            '-filter_complex'
+          ]
           if (frontPath) {
             metaData = await getMetaData(frontPath)
-            frames += metaData['frames']
+            duration += metaData['duration']
+            query = query.input(frontPath)
           }
           if (endPath) {
+            query = query.input(endPath)
             metaData = await getMetaData(endPath)
-            frames += metaData['frames']
+            duration += metaData['duration']
           }
-          ffmpeg(path.join(__dirname, 'input.txt'))
-            .inputOptions(
-              '-f', 'concat',
-              '-safe', '0'
-            ).outputOptions([
-              '-acodec', 'aac', '-vcodec', 'libx264'
-            ]).fps(60).on('start', function (commandLine) {
-              console.log('Started: ' + commandLine)
-            }).on('progress', function (progress) {
+          if (frontPath && endPath) {
+            outputOption.push('[0:0] [0:1] [1:0] [1:1] [2:0] [2:1] concat=n=3:v=1:a=1 [v] [a]')
+          } else {
+            outputOption.push('[0:0] [0:1] [1:0] [1:1]  concat=n=2:v=1:a=1 [v] [a]')
+          }
+          outputOption.push('-map')
+          outputOption.push('[v]')
+          outputOption.push('-map')
+          outputOption.push('[a]')
+          query.outputOptions(outputOption).fps(60).on('start', function (commandLine) {
+            console.log('Started: ' + commandLine)
+          })
+            .on('progress', function (progress) {
               progress.name = '拼接视频'
-              progress.percent = (progress.frames / frames * 100)
+              progress.percent = (timeStrToSecond(progress.timemark) / duration * 100)
               progressFunc(progress)
             })
             .on('error', function (err) {

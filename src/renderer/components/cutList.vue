@@ -64,20 +64,18 @@
   <el-dialog
       title="进度"
       :visible="loading"
+      :show-close="false"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
       width="30%">
-    <el-steps :space="200" :active="step" finish-status="success" simple>
-      <el-step title="处理视频">
-      </el-step>
-      <el-step title="视频上传">
-      </el-step>
-    </el-steps>
-
-    <el-row :gutter="10" v-if="step===1">
-      <el-col :span="20"><el-progress :percentage="plan.percent" :format="format"/></el-col>
-      <el-col :span="4">{{plan.name}}</el-col>
-    </el-row>
-
-    <p v-if="step===2" v-for="log of logs">{{log}}</p>
+    <el-input
+        type="textarea"
+        id="scroll_text"
+        :rows="10"
+        :disabled="true"
+        placeholder="日志内容"
+        v-model="log_text">
+    </el-input>
   </el-dialog>
 </div>
 </template>
@@ -99,6 +97,17 @@ export default {
         this.getList()
       }
     })
+  },
+  computed: {
+    log_text: function () {
+      this.$nextTick(() => {
+        setTimeout(() => {
+          const textarea = document.getElementById('scroll_text')
+          textarea.scrollTop = textarea.scrollHeight
+        }, 13)
+      })
+      return this.logs.join('\n')
+    }
   },
   data: function () {
     return {
@@ -140,13 +149,13 @@ export default {
         this.sendType.savePath,
         this.sendType.front,
         this.sendType.end, (progress) => {
-          this.plan = progress
+          this.logs.push(`正在${progress.name},进度${progress.percent}%`)
         }
       ).then((res) => {
         return new Promise((resolve, reject) => {
           if (this.sendType.watermark) {
             water(res, res, this.sendType.watermark, 'rt', (progress) => {
-              this.plan = progress
+              this.logs.push(`正在${progress.name},进度${progress.percent}%`)
             }).then((res) => {
               resolve(res)
             }).catch(error => {
@@ -158,7 +167,6 @@ export default {
         })
       }).then((res) => {
         return new Promise((resolve, reject) => {
-          this.step = 2
           switch (this.sendType.type) {
             case 'xigua':xigua(res, `${row.title}~${row.name}`, row.desc, (event) => {
               this.logs.push(event)
@@ -166,16 +174,21 @@ export default {
               resolve()
             }).catch((err) => {
               reject(err)
-            })
+            }); break
+            default:
+              resolve()
           }
         })
-      }).catch((err) => {
-        console.log(err)
-        this.$message.error('失败:' + err)
-        this.loading = false
-      }).finally(() => {
-        this.loading = false
       })
+        .then(() => {
+          this.loading = false
+        }).catch((err) => {
+          console.log(err)
+          this.$message.error('失败:' + err)
+          this.loading = false
+        }).finally(() => {
+          this.loading = false
+        })
     },
     showDetail: function () {},
     getList: function () {
