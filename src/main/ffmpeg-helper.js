@@ -293,11 +293,11 @@ export function cutVideo (videoPath, startTime, endTime, outDir, name = null, pr
       if (startTime >= 10) {
         firstStartTimeStr = secondToTimeStr(startTime - 10)
         startTimeStr = secondToTimeStr(10)
-        endTimeStr = secondToTimeStr(endTime - startTime)
+        endTimeStr = endTime - startTime
       }
       ffmpeg().input(videoPath)
         .setStartTime(firstStartTimeStr)
-        .outputOption(['-ss', startTimeStr, '-to', endTimeStr, '-c:v', 'libx264', '-c:a', 'aac', '-avoid_negative_ts', 1])
+        .outputOption(['-ss', startTimeStr, '-t', endTimeStr, '-c:v', 'libx264', '-c:a', 'aac', ' -strict', 'experimental'])
         .format('mp4')
         .output(path.join(outDir, name + '.mp4'))
         .on('start', function (commandLine) {
@@ -319,7 +319,6 @@ export function cutVideo (videoPath, startTime, endTime, outDir, name = null, pr
           reject(new Error(err))
         }).run()
     }).catch((err) => {
-      console.log(err)
       reject(new Error(err))
     })
   })
